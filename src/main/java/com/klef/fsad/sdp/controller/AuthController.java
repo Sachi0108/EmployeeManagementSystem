@@ -43,7 +43,7 @@ public class AuthController {
 	@GetMapping("/")
 	public String home() {
 		logger.info("Home endpoint accessed");
-		return "Employee Management System Backend Project is Running";
+		return "Welcome to Employee Management System...!!!";
 	}
 	
 	@PostMapping("/checklogin")

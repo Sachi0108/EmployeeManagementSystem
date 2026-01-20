@@ -9,12 +9,10 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.klef.fsad.sdp.model.Admin;
-import com.klef.fsad.sdp.model.Email;
 import com.klef.fsad.sdp.model.Employee;
 import com.klef.fsad.sdp.model.Leave;
 import com.klef.fsad.sdp.model.Manager;
 import com.klef.fsad.sdp.repository.AdminRepository;
-import com.klef.fsad.sdp.repository.EmailRepository;
 import com.klef.fsad.sdp.repository.EmployeeRepository;
 import com.klef.fsad.sdp.repository.LeaveRepository;
 import com.klef.fsad.sdp.repository.ManagerRepository;
@@ -31,11 +29,7 @@ public class AdminServiceImpl implements AdminService {
 	@Autowired
 	private EmployeeRepository employeeRepository;
 	@Autowired
-	private EmailRepository emailRepository;
-	@Autowired
 	private LeaveRepository leaveRepository;
-	@Autowired
-	private EmailService emailService;
 
 	@Override
 	public Admin checkadminlogin(String username, String password) {
@@ -67,14 +61,6 @@ public class AdminServiceImpl implements AdminService {
 		Manager savedManager = managerRepository.save(manager);
 		logger.info("Manager saved successfully");
 		
-		Email e = new Email();
-		e.setRecipient(manager.getEmail());
-		e.setSubject("Welcome Manager to EMS!");
-		e.setMessage("Hi " + manager.getName() + ", \n\nYou have been successfully added. \n\nManager ID: " + manager.getId() + "\nUsername: " + manager.getUsername() + "\nPassword: " + manager.getPassword());
-		e.setSentAt(LocalDateTime.now());
-		e.setStatus("SENT");
-		emailRepository.save(e);
-		emailService.sendEmail(e.getRecipient(),e.getSubject(),e.getMessage());
 		
 		return savedManager;
 	}
