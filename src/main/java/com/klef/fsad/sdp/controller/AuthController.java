@@ -56,42 +56,34 @@ public class AuthController {
 		Manager manager = managerService.checkmanagerlogin(identifier, password);
 		Employee employee = employeeService.checkemplogin(identifier, password);
 		
+		// Helper method to create standardized login response
 		if(admin != null) {
-			String token = jwtService.generateJWTToken(admin.getUsername(), "ADMIN");
-			Map<String, Object> res = new HashMap<String, Object>();
-			res.put("role", "admin");
-			res.put("message", "Login Successful");
-			res.put("token", token);
-			res.put("data", admin);
-			
-			return ResponseEntity.ok(res);
+			return createLoginResponse("ADMIN", admin.getUsername(), admin);
 		}
 		if(manager != null) {
-			String token = jwtService.generateJWTToken(manager.getUsername(), "MANAGER");
-			Map<String, Object> res = new HashMap<String, Object>();
-			res.put("role", "manager");
-			res.put("message", "Login Successful");
-			res.put("token", token);
-			res.put("data", manager);
-
-			return ResponseEntity.ok(res);
+			return createLoginResponse("MANAGER", manager.getUsername(), manager);
 		}
 		if(employee != null) {
-			if (employee.getAccountstatus().equalsIgnoreCase("Accepted")) {
-				String token = jwtService.generateJWTToken(employee.getUsername(), "EMPLOYEE");
-				Map<String, Object> res = new HashMap<String, Object>();
-				res.put("role", "employee");
-				res.put("message", "Login Successful");
-				res.put("token", token);
-				res.put("data", employee);
-
-				return ResponseEntity.ok(res);
+			if (employee.getAccountstatus() != null && employee.getAccountstatus().equalsIgnoreCase("Accepted")) {
+				return createLoginResponse("EMPLOYEE", employee.getUsername(), employee);
 			} 
 			else {
-				return ResponseEntity.status(401).body(Map.of("message", "Account Not approved yet Please Contact Administrator. Current Status: " + employee.getAccountstatus()));
+				return ResponseEntity.status(401).body(Map.of("message", "Account Not approved yet Please Contact Administrator. Current Status: " + (employee.getAccountstatus() != null ? employee.getAccountstatus() : "Not Set")));
 			}
 		}
 		return ResponseEntity.status(401).body(Map.of("message", "Invalid Username/Email or Password"));
+	}
+	
+	// Helper method to create standardized login response
+	private ResponseEntity<Map<String, Object>> createLoginResponse(String role, String username, Object userData) {
+		String token = jwtService.generateJWTToken(username, role);
+		Map<String, Object> response = new HashMap<>();
+		response.put("role", role.toLowerCase());
+		response.put("message", "Login Successful");
+		response.put("token", token);
+		response.put("data", userData);
+		
+		return ResponseEntity.ok(response);
 	}
 	
     @PostMapping("/forgotpassword")

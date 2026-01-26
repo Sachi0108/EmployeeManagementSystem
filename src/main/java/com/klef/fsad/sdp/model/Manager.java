@@ -2,6 +2,7 @@ package com.klef.fsad.sdp.model;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -47,9 +48,11 @@ public class Manager {
 	private String role;
 	
 	@OneToMany(mappedBy = "manager", cascade = CascadeType.ALL)
+	@JsonIgnore
 	private List<Employee> employees;
 	
 	@OneToMany(mappedBy = "assingedByManager",cascade = CascadeType.ALL)
+	@JsonIgnore
 	private List<Duty> dutiesAssinged;
 
 	public Long getId() {

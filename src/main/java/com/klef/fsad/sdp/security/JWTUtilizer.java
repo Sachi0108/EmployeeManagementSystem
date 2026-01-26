@@ -50,7 +50,10 @@ public class JWTUtilizer {
 		catch(ExpiredJwtException e) {
 			res.put("code", "401");
 			res.put("error", "token expired. Please login again");
-			// res.put("error", e.getMessage());
+		}
+		catch(Exception e) {
+			res.put("code", "401");
+			res.put("error", "invalid token. Please login again");
 		}
 		return res;
 	}

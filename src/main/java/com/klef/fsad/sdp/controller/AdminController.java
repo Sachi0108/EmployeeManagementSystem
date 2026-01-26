@@ -1,6 +1,7 @@
 package com.klef.fsad.sdp.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -42,7 +43,8 @@ public class AdminController {
 	@PostMapping("/addmanager")
 	public ResponseEntity<String> addManager(@RequestBody Manager manager,@RequestHeader("Authorization") String authHeader) {
 		String token = authHeader.substring(7);
-		if(!jwtService.validateToken(token).get("role").equals("ADMIN")) {
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 			return ResponseEntity.status(403).body("Access Denied! Admin privileges required");
 		}
 		
@@ -54,7 +56,8 @@ public class AdminController {
 	public ResponseEntity<List<Manager>> viewAllManagers(@RequestHeader("Authorization") String authHeader) {
 		
 		String token = authHeader.substring(7);
-		if(!jwtService.validateToken(token).get("role").equals("ADMIN")) {
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 			return ResponseEntity.status(403).body(null);
 		}
 		
@@ -65,7 +68,8 @@ public class AdminController {
 	public ResponseEntity<List<Employee>> viewAllEmployees(@RequestHeader("Authorization") String authHeader) {
 		
 		String token = authHeader.substring(7);
-		if(!jwtService.validateToken(token).get("role").equals("ADMIN")) {
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 			return ResponseEntity.status(403).body(null);
 		}
 		
@@ -75,7 +79,8 @@ public class AdminController {
 	@PutMapping("/assigndutytomanager") 
 	public ResponseEntity<String> assignDutyToManager(@RequestBody Duty duty, @RequestParam Long managerid, @RequestHeader("Authorization") String authHeader) {
 		String token = authHeader.substring(7);
-		if(!jwtService.validateToken(token).get("role").equals("ADMIN")) {
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 			return ResponseEntity.status(403).body("Access Denied! Admin privileges required");
 		}
 		Admin admin = adminService.findAdminById(1); // Get current admin ID from token if needed
@@ -87,29 +92,14 @@ public class AdminController {
 	public ResponseEntity<String> assignDutyToEmployee(@RequestBody Duty duty, @RequestParam Long empid, @RequestHeader("Authorization") String authHeader) {
 		try {
 			String token = authHeader.substring(7);
-			System.out.println("Token: " + token);
-			
-			var tokenClaims = jwtService.validateToken(token);
-			System.out.println("Token claims: " + tokenClaims);
-			
-			if(tokenClaims == null || tokenClaims.get("role") == null) {
-				return ResponseEntity.status(401).body("Invalid or expired token");
-			}
-			
-			String role = tokenClaims.get("role");
-			System.out.println("User role: " + role);
-			
-			if(!role.equals("ADMIN")) {
+			Map<String, String> tokenClaims = jwtService.validateToken(token);
+			if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 				return ResponseEntity.status(403).body("Access Denied! Admin privileges required");
 			}
-			System.out.println("Assigning duty to employee: " + empid);
-			System.out.println("Duty details: " + duty);
 			Admin admin = adminService.findAdminById(1); // Get current admin ID from token if needed
 			dutyService.assignDutyByAdminToEmployee(duty, empid, admin.getId());
 			return ResponseEntity.ok("Duty Assinged to Employee Successfully");
 		} catch (Exception e) {
-			System.err.println("Error assigning duty to employee: " + e.getMessage());
-			e.printStackTrace();
 			return ResponseEntity.status(500).body("Error: " + e.getMessage());
 		}
 	}
@@ -117,7 +107,8 @@ public class AdminController {
 	@PutMapping("/updateempaccstatus") 
 	public ResponseEntity<String> updateEmployeeAccountStatus(@RequestParam Long empid, @RequestParam String status,@RequestHeader("Authorization") String authHeader) {
 		String token = authHeader.substring(7);
-		if(!jwtService.validateToken(token).get("role").equals("ADMIN")) {
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 			return ResponseEntity.status(403).body("Access Denied! Admin privileges required");
 		}
 		
@@ -125,10 +116,36 @@ public class AdminController {
 		return ResponseEntity.ok(message);
 	}
 	
+	@PutMapping("/approveallpendingemployees")
+	public ResponseEntity<String> approveAllPendingEmployees(@RequestHeader("Authorization") String authHeader) {
+		String token = authHeader.substring(7);
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
+			return ResponseEntity.status(403).body("Access Denied! Admin privileges required");
+		}
+		
+		try {
+			List<Employee> pendingEmployees = adminService.viewAllEmployees();
+			int approvedCount = 0;
+			
+			for(Employee emp : pendingEmployees) {
+				if(emp.getAccountstatus() != null && emp.getAccountstatus().equalsIgnoreCase("PENDING")) {
+					managerService.updateEmployeeAccountStatus(emp.getId(), "ACCEPTED");
+					approvedCount++;
+				}
+			}
+			
+			return ResponseEntity.ok("Successfully approved " + approvedCount + " pending employees");
+		} catch(Exception e) {
+			return ResponseEntity.status(500).body("Error approving employees: " + e.getMessage());
+		}
+	}
+	
 	@GetMapping("/viewallapplications")
 	public ResponseEntity<List<Leave>> viewAllLeaveApplications(@RequestHeader("Authorization") String authHeader) {
 		String token = authHeader.substring(7);
-		if(!jwtService.validateToken(token).get("role").equals("ADMIN")) {
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 			return ResponseEntity.status(403).body(null);
 		}
 		
@@ -139,7 +156,8 @@ public class AdminController {
 	@DeleteMapping("/deleteemployee")
 	public ResponseEntity<String> deleteEmployee(@RequestParam Long eid,@RequestHeader("Authorization") String authHeader) {
 		String token = authHeader.substring(7);
-		if(!jwtService.validateToken(token).get("role").equals("ADMIN")) {
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 			return ResponseEntity.status(403).body("Access Denied! Admin privileges required");
 		}
 		
@@ -150,7 +168,8 @@ public class AdminController {
 	@DeleteMapping("/deletemanager")
 	public ResponseEntity<String> deleteManager(@RequestParam Long mid,@RequestHeader("Authorization") String authHeader) {
 		String token = authHeader.substring(7);
-		if(!jwtService.validateToken(token).get("role").equals("ADMIN")) {
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 			return ResponseEntity.status(403).body("Access Denied! Admin privileges required");
 		}
 		
@@ -161,7 +180,8 @@ public class AdminController {
 	@GetMapping("/viewemployeeduties")
 	public ResponseEntity<List<Duty>> viewEmployeeAssingedDuties(@RequestParam Long eid,@RequestHeader("Authorization") String authHeader) {
 		String token = authHeader.substring(7);
-		if(!jwtService.validateToken(token).get("role").equals("ADMIN")) {
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 			return ResponseEntity.status(403).body(null);
 		}
 		
@@ -172,7 +192,8 @@ public class AdminController {
 	@GetMapping("/viewassingeddutiesbymanager")
 	public ResponseEntity<List<Duty>> getDutiesAssingedByManager(@RequestParam Long mid,@RequestHeader("Authorization") String authHeader) {
 		String token = authHeader.substring(7);
-		if(!jwtService.validateToken(token).get("role").equals("ADMIN")) {
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 			return ResponseEntity.status(403).body(null);
 		}
 		List<Duty> duties = dutyService.viewDutiesAssignedByManager(mid);
@@ -182,7 +203,8 @@ public class AdminController {
 	@GetMapping("/viewassingeddutiesbyadmin")
 	public ResponseEntity<List<Duty>> getDutiesAssingedByAdmin(@RequestParam int id,@RequestHeader("Authorization") String authHeader) {
 		String token = authHeader.substring(7);
-		if(!jwtService.validateToken(token).get("role").equals("ADMIN")) {
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 			return ResponseEntity.status(403).body(null);
 		}
 		List<Duty> duties = dutyService.viewDutiesAssignedByAdmin(id);
@@ -192,7 +214,8 @@ public class AdminController {
 	@GetMapping("/managercount")
 	public ResponseEntity<Long> getManagerCount(@RequestHeader("Authorization") String authHeader) {
 		String token = authHeader.substring(7);
-		if(!jwtService.validateToken(token).get("role").equals("ADMIN")) {
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 			return ResponseEntity.status(403).body(null);
 		}
 		
@@ -202,7 +225,8 @@ public class AdminController {
 	@GetMapping("/employeecount")
 	public ResponseEntity<Long> getEmployeeCount(@RequestHeader("Authorization") String authHeader) {
 		String token = authHeader.substring(7);
-		if(!jwtService.validateToken(token).get("role").equals("ADMIN")) {
+		Map<String, String> tokenClaims = jwtService.validateToken(token);
+		if(tokenClaims == null || tokenClaims.get("role") == null || !tokenClaims.get("role").equals("ADMIN")) {
 			return ResponseEntity.status(403).body(null);
 		}
 		
